@@ -34,30 +34,31 @@ fi
 	echo "############################################################"
 	#lsbk imprime la bista de los discos
 	lsblk -o NAME,PATH,SIZE,TYPE,PARTTYPENAME,PTTYPE,PARTLABEL,MODEL,START,PARTFLAGS
-	read -rp "ingrese la particion que sera usado (ejemplo: /dev/sda): " discoSeleccionado
-	read -rp "cuantos mib quieres usar el setup recomendo unos 10240mib: " mibSeleccionados
-if [ "$mibSeleccionados" -le 4096 ]; then
+	read -rp "ingrese la particion que sera usado (ejemplo: /dev/sda): " discoSelecionado
+	read -rp "cuantos mib quieres usar el setup recomendo unos 10240mib: " mibSelecionados
+if [ "$mibSelecionados" -le 4096 ]; then
 	echo "la cantidad de mib es muy baja, se recomienda 10240mib"
 	exit 1
 fi
 
-NombreDiscoSelecionado=$(lsblk -J -o NAME$discoSelecionado" )
-InicioDiscoSelecionado=$(lsblk -J -o START "$discoSeleccionado" )
-TamañoDiscoSelecionado=$(lsblk -J -o SIZE "$discoSeleccionado" )
+NombreDiscoSelecionado=$(lsblk -J -b -o NAME "$discoSelecionado" );
+InicioDiscoSelecionado=$(lsblk -J -b -o START "$discoSelecionado" );
+TamanoDiscoSelecionado=$(lsblk -J -b -o SIZE "$discoSelecionado" );
 
-
-resultado=$(python3 - "$NombreDiscoSelecionado" "$InicioDiscoSelecionado" "$TamañoDiscoSelecionado" <<'PY'
+IFS='|' read -r nombreDepurado inicioDepurado finalDiscoDepurado <(python3 - "$NombreDiscoSelecionado" "$InicioDiscoSelecionado" "$TamanoDiscoSelecionado" <<'EOF_PYTHON'
 import sys
 import json
+nombreParticionRaw = json.loads(sys.argv[1])
 InicioDiscoSelecionadoPY = json.loads(sys.argv[2])
 TamañoDiscoSelecionadoPY = json.loads(sys.argv[3])
-InicioDiscoSelecionadoDepuradoPY = InicioDiscoSelecionadoPY["blockdevice"][0]["start"]
-TamañoDiscoSelecionadoDepuradoPY = TamañoDiscoSelecionadoPY["blockdevice"][0]["size"]
-
-
-
-
-
-
-py
+nombreDepurado = nombreParticionRaw["blockdevices"][0]["name"]
+InicioDiscoSelecionadoDepuradoPY = int(InicioDiscoSelecionadoPY["blockdevices"][0]["start"])
+TamañoDiscoSelecionadoDepuradoPY = int(TamañoDiscoSelecionadoPY["blockdevices"][0]["size"])
+finalDiscoselecionadoPY = int(InicioDiscoSelecionadoDepuradoPY + (TamañoDiscoSelecionadoDepuradoPY // 512) -1)
+print(f"{nombreDepurado}|{inicioDepurado}|{finalDiscoselecionadoPY}")
+EOF_PYTHON
 )
+
+echo "$nombreDepurado"
+echo "$inicioDepurado"
+echo "$finalDiscoDepurado"
