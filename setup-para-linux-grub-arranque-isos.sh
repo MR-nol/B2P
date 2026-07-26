@@ -1,21 +1,16 @@
 #!/bin/bash
+set -x
 #version 0.2.1
-#pensado para que incluso principiantes puedan usarlo, sin miedo a perder datos de otros discos
-
-#loguica para que el script se ejecute con privilegios de root
-# asi mismo si ocurre el mas minimo error, el script se detiene y no sigue ejecutando comandos que puedan dañar el sistema
-echo "recuerda formatear un particion como sin formato y que sea de unos 7 8gib como minimo en gpared o otro gestor de particiones"
-echo "en la tabla de particiones de mas adelante en este script deberia aparecerte como dos en la columna PTTYPE"
+	#pensado para que incluso principiantes puedan usarlo, sin miedo a perder datos de otros discos
+	#loguica para que el script se ejecute con privilegios de root
+	# asi mismo si ocurre el mas minimo error, el script se detiene y no sigue ejecutando comandos que puedan dañar el sistema
+	echo "recuerda formatear un particion como sin formato y que sea de unos 7 8gib como minimo en gpared o otro gestor de particiones"
+	echo "en la tabla de particiones de mas adelante en este script deberia aparecerte como dos en la columna PTTYPE"
+	echo "por ahora si haces todo tal cual no hara nada mal"
 if [ "$(id -u)" -ne 0 ]; then
 	echo "ERROR: corre esto con sudo."
 	exit 1
 fi
-
-# Pide que el usuario escriba EXACTAMENTE la palabra indicada.
-# Cualquier otra cosa cancela. No acepta "y", "yes", "si" corto:
-# tiene que ser la palabra completa que se le pide, a proposito,
-# para que no sea un reflejo de apretar Enter/escribir rapido.
-
 #paso 1
 	echo "############################################################"
 	echo "te ayudaremos a guiarte no te preocupes las instrucciones estan abajo"
@@ -23,9 +18,6 @@ fi
 	echo "vista general de discos:"
 	echo 
 	read
-
-
-
 	echo 
 	echo 
 	echo "tu disco talvez se vea asi"
@@ -38,31 +30,34 @@ fi
 	echo 
 	read
 	echo 
-
-
-
 #comprobar que elijio el ususario
 	echo "############################################################"
 	#lsbk imprime la bista de los discos
 	lsblk -o NAME,PATH,SIZE,TYPE,PARTTYPENAME,PTTYPE,PARTLABEL,MODEL,START,PARTFLAGS
-
-
 	read -rp "ingrese la particion que sera usado (ejemplo: /dev/sda): " discoSeleccionado
 	read -rp "cuantos mib quieres usar el setup recomendo unos 10240mib: " mibSeleccionados
-
-
-
 if [ "$mibSeleccionados" -le 4096 ]; then
 	echo "la cantidad de mib es muy baja, se recomienda 10240mib"
 	exit 1
 fi
 
+NombreDiscoSelecionado=$(lsblk -J -o NAME$discoSelecionado" )
+InicioDiscoSelecionado=$(lsblk -J -o START "$discoSeleccionado" )
+TamañoDiscoSelecionado=$(lsblk -J -o SIZE "$discoSeleccionado" )
 
-#loguica de parted
-	# mostrar tabla de particiones (no interactivo)
-	parted -s "$discoSeleccionado" print
 
-	# ejemplo no interactivo para crear tabla y partición (DESCOMENTAR para ejecutar):
-	# parted -s "$discoSeleccionado" mklabel gpt
-	# parted -s "$discoSeleccionado" mkpart primary ext4 1MiB "${mibSeleccionados}MiB"
+resultado=$(python3 - "$NombreDiscoSelecionado" "$InicioDiscoSelecionado" "$TamañoDiscoSelecionado" <<'PY'
+import sys
+import json
+InicioDiscoSelecionadoPY = json.loads(sys.argv[2])
+TamañoDiscoSelecionadoPY = json.loads(sys.argv[3])
+InicioDiscoSelecionadoDepuradoPY = InicioDiscoSelecionadoPY["blockdevice"][0]["start"]
+TamañoDiscoSelecionadoDepuradoPY = TamañoDiscoSelecionadoPY["blockdevice"][0]["size"]
 
+
+
+
+
+
+py
+)
