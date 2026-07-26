@@ -45,7 +45,7 @@ NombreDiscoSelecionado=$(lsblk -J -b -o NAME "$discoSelecionado" );
 InicioDiscoSelecionado=$(lsblk -J -b -o START "$discoSelecionado" );
 TamanoDiscoSelecionado=$(lsblk -J -b -o SIZE "$discoSelecionado" );
 
-IFS='|' read -r nombreDepurado inicioDepurado finalDiscoDepurado <(python3 - "$NombreDiscoSelecionado" "$InicioDiscoSelecionado" "$TamanoDiscoSelecionado" <<'EOF_PYTHON'
+IFS='|' read -r nombreDepurado inicioDepurado finalDiscoDepurado < <(python3 - "$NombreDiscoSelecionado" "$InicioDiscoSelecionado" "$TamanoDiscoSelecionado" <<'EOF_PYTHON'
 import sys
 import json
 nombreParticionRaw = json.loads(sys.argv[1])
@@ -55,7 +55,7 @@ nombreDepurado = nombreParticionRaw["blockdevices"][0]["name"]
 InicioDiscoSelecionadoDepuradoPY = int(InicioDiscoSelecionadoPY["blockdevices"][0]["start"])
 TamañoDiscoSelecionadoDepuradoPY = int(TamañoDiscoSelecionadoPY["blockdevices"][0]["size"])
 finalDiscoselecionadoPY = int(InicioDiscoSelecionadoDepuradoPY + (TamañoDiscoSelecionadoDepuradoPY // 512) -1)
-print(f"{nombreDepurado}|{inicioDepurado}|{finalDiscoselecionadoPY}")
+print(f"{nombreDepurado}|{InicioDiscoSelecionadoDepuradoPY}|{finalDiscoselecionadoPY}")
 EOF_PYTHON
 )
 
