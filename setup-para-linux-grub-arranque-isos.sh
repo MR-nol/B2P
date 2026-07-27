@@ -62,3 +62,7 @@ EOF_PYTHON
 echo "$nombreDepurado"
 echo "$inicioDepurado"
 echo "$finalDiscoDepurado"
+
+parted -s select "$discoSelecionado"
+parted
+parted -s mkpart primary fat32 "$inicioDepurado"s "$mibSelecionados"s
