@@ -5,7 +5,7 @@ set -x
 	#loguica para que el script se ejecute con privilegios de root
 	# asi mismo si ocurre el mas minimo error, el script se detiene y no sigue ejecutando comandos que puedan dañar el sistema
 	echo "recuerda formatear un particion como sin formato y que sea de unos 7 8gib como minimo en gpared o otro gestor de particiones"
-	echo "en la tabla de particiones de mas adelante en este script deberia aparecerte como dos en la columna PTTYPE"
+	echo "en la tabla de particiones de mas adelante en este script deberia aparecerte como "dos" en la columna PTTYPE"
 	echo "por ahora si haces todo tal cual no hara nada mal"
 if [ "$(id -u)" -ne 0 ]; then
 	echo "ERROR: corre esto con sudo."
@@ -35,7 +35,6 @@ fi
 	#lsbk imprime la bista de los discos
 	lsblk -o NAME,PATH,SIZE,TYPE,PARTTYPENAME,PTTYPE,PARTLABEL,MODEL,START,PARTFLAGS
 	read -rp "ingrese la particion que sera usado (ejemplo: /dev/sda): " discoSelecionado
-	read -rp "cuantos mib quieres usar el setup recomendo unos 10240mib: " mibSelecionados
 if [ "$mibSelecionados" -le 4096 ]; then
 	echo "la cantidad de mib es muy baja, se recomienda 10240mib"
 	exit 1
@@ -45,7 +44,7 @@ NombreDiscoSelecionado=$(lsblk -J -b -o NAME "$discoSelecionado" );
 InicioDiscoSelecionado=$(lsblk -J -b -o START "$discoSelecionado" );
 TamanoDiscoSelecionado=$(lsblk -J -b -o SIZE "$discoSelecionado" );
 
-IFS='|' read -r nombreDepurado inicioDepurado finalDiscoDepurado < <(python3 - "$NombreDiscoSelecionado" "$InicioDiscoSelecionado" "$TamanoDiscoSelecionado" <<'EOF_PYTHON'
+IFS='|' read -r nombreDepurado inicioDepurado finalDiscoDepurado TamanoDiscoDepurado < <(python3 - "$NombreDiscoSelecionado" "$InicioDiscoSelecionado" "$TamanoDiscoSelecionado" <<'EOF_PYTHON'
 import sys
 import json
 nombreParticionRaw = json.loads(sys.argv[1])
@@ -55,14 +54,19 @@ nombreDepurado = nombreParticionRaw["blockdevices"][0]["name"]
 InicioDiscoSelecionadoDepuradoPY = int(InicioDiscoSelecionadoPY["blockdevices"][0]["start"])
 TamañoDiscoSelecionadoDepuradoPY = int(TamañoDiscoSelecionadoPY["blockdevices"][0]["size"])
 finalDiscoselecionadoPY = int(InicioDiscoSelecionadoDepuradoPY + (TamañoDiscoSelecionadoDepuradoPY // 512) -1)
-print(f"{nombreDepurado}|{InicioDiscoSelecionadoDepuradoPY}|{finalDiscoselecionadoPY}")
+TamanoDiscoSelecionadoDepuradoPYMIb = int(TamañoDiscoSelecionadoDepuradoPY // (1024 * 1024))
+print(f"{nombreDepurado}|{InicioDiscoSelecionadoDepuradoPY}|{finalDiscoselecionadoPY}|{TamanoDiscoSelecionadoDepuradoPYMIb}")
 EOF_PYTHON
 )
 
 echo "$nombreDepurado"
 echo "$inicioDepurado"
 echo "$finalDiscoDepurado"
-
+echo "$TamanoDiscoDepurado"
 parted -s select "$discoSelecionado"
 parted
-parted -s mkpart primary fat32 "$inicioDepurado"s "$mibSelecionados"s
+parted -s mkpart primary fat32 "$inicioDepurado"s
+if [ "$mibSelecionados" -le 4096 ]; then
+	echo "la cantidad de mib es muy baja, se recomienda 10240mib"
+	exit 1
+fi
